@@ -184,11 +184,65 @@ describe('resolveLaunchPolicy', () => {
     expect(mockedSpawnSync).toHaveBeenNthCalledWith(
       2,
       'C:\\Windows\\System32\\cmd.exe',
-      ['/d', '/s', '/c', '"C:\\Program Files\\psmux\\tmux.cmd" -V'],
-      { timeout: 5000 }
+      ['/d', '/s', '/c', '""C:\\Program Files\\psmux\\tmux.cmd" -V"'],
+      expect.objectContaining({ timeout: 5000, windowsVerbatimArguments: true }),
     );
 
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+  });
+
+  it('runs a tmux.exe under a path with a space directly on win32, without a shell', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    const tmuxExe = 'C:\\Users\\First Last\\AppData\\Local\\Microsoft\\WinGet\\Links\\tmux.exe';
+    mockedSpawnSync.mockClear();
+    mockedSpawnSync
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: `${tmuxExe}\r\n`,
+        stderr: '',
+        pid: 0,
+        output: [],
+        signal: null,
+      } as ReturnType<typeof spawnSync>)
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: '',
+        stderr: '',
+        pid: 0,
+        output: [],
+        signal: null,
+      } as ReturnType<typeof spawnSync>);
+
+    expect(resolveLaunchPolicy({})).toBe('outside-tmux');
+    expect(mockedSpawnSync).toHaveBeenNthCalledWith(2, tmuxExe, ['-V'], expect.objectContaining({ timeout: 5000 }));
+    expect(mockedSpawnSync.mock.calls[1][2]).not.toHaveProperty('shell');
+  });
+
+  it('probes plain tmux without a shell on win32 when where finds nothing', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    mockedSpawnSync.mockClear();
+    mockedSpawnSync
+      .mockReturnValueOnce({
+        status: 1,
+        stdout: '',
+        stderr: 'INFO: Could not find files for the given pattern(s).\r\n',
+        pid: 0,
+        output: [],
+        signal: null,
+      } as ReturnType<typeof spawnSync>)
+      .mockReturnValueOnce({
+        status: null,
+        stdout: '',
+        stderr: '',
+        pid: 0,
+        output: [],
+        signal: null,
+        error: Object.assign(new Error('spawnSync tmux ENOENT'), { code: 'ENOENT' }),
+      } as ReturnType<typeof spawnSync>);
+
+    expect(resolveLaunchPolicy({})).toBe('direct');
+    expect(mockedSpawnSync).toHaveBeenNthCalledWith(2, 'tmux', ['-V'], expect.objectContaining({ timeout: 5000 }));
+    expect(mockedSpawnSync.mock.calls[1][2]).not.toHaveProperty('shell');
   });
 });
 
@@ -294,8 +348,8 @@ describe('tmux command execution parity on Windows', () => {
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
-      ['/d', '/s', '/c', '"C:\\Program Files\\psmux\\tmux.cmd" list-sessions'],
-      expect.objectContaining({ encoding: 'utf-8' }),
+      ['/d', '/s', '/c', '""C:\\Program Files\\psmux\\tmux.cmd" list-sessions"'],
+      expect.objectContaining({ encoding: 'utf-8', windowsVerbatimArguments: true }),
     );
 
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
@@ -329,8 +383,8 @@ describe('tmux command execution parity on Windows', () => {
 
     expect(mockedSpawnSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
-      ['/d', '/s', '/c', '"C:\\Program Files\\psmux\\tmux.cmd" list-panes'],
-      expect.objectContaining({ encoding: 'utf-8' }),
+      ['/d', '/s', '/c', '""C:\\Program Files\\psmux\\tmux.cmd" list-panes"'],
+      expect.objectContaining({ encoding: 'utf-8', windowsVerbatimArguments: true }),
     );
 
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
@@ -357,8 +411,8 @@ describe('tmux command execution parity on Windows', () => {
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
-      ['/d', '/s', '/c', '"C:\\Program Files\\psmux\\tmux.cmd" send-keys "foo(bar)"'],
-      expect.objectContaining({ encoding: 'utf-8' }),
+      ['/d', '/s', '/c', '""C:\\Program Files\\psmux\\tmux.cmd" send-keys "foo(bar)""'],
+      expect.objectContaining({ encoding: 'utf-8', windowsVerbatimArguments: true }),
     );
 
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
@@ -384,8 +438,8 @@ describe('tmux command execution parity on Windows', () => {
     expect(mockedExec).not.toHaveBeenCalled();
     expect(mockedExecFile).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
-      ['/d', '/s', '/c', '"C:\\Program Files\\psmux\\tmux.cmd" display-message -p #{window_width}'],
-      expect.objectContaining({ encoding: 'utf-8' }),
+      ['/d', '/s', '/c', '""C:\\Program Files\\psmux\\tmux.cmd" display-message -p #{window_width}"'],
+      expect.objectContaining({ encoding: 'utf-8', windowsVerbatimArguments: true }),
       expect.any(Function),
     );
   });

@@ -42,6 +42,7 @@ function resolveEnv(opts?: TmuxExecOptions): NodeJS.ProcessEnv {
 interface TmuxCommandInvocation {
   command: string;
   args: string[];
+  windowsVerbatimArguments?: boolean;
 }
 
 function isUnixLikeOnWindows(): boolean {
@@ -81,9 +82,13 @@ function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
   if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
     const comspec = process.env.COMSPEC || 'cmd.exe';
     const commandLine = [quoteForCmd(resolvedBinary), ...args.map(quoteForCmd)].join(' ');
+    // Pass the line verbatim: Node would otherwise escape its quotes as \",
+    // which cmd.exe does not understand. /s strips only the outer pair of
+    // quotes, so a quoted wrapper path keeps its own.
     return {
       command: comspec,
-      args: ['/d', '/s', '/c', commandLine],
+      args: ['/d', '/s', '/c', `"${commandLine}"`],
+      windowsVerbatimArguments: true,
     };
   }
 
@@ -93,13 +98,19 @@ function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
   };
 }
 
+function verbatimOption(invocation: TmuxCommandInvocation): { windowsVerbatimArguments?: true } {
+  return invocation.windowsVerbatimArguments ? { windowsVerbatimArguments: true } : {};
+}
+
 export function tmuxExec(
   args: string[],
   opts?: TmuxExecOptions & Omit<ExecFileSyncOptionsWithStringEncoding, 'env' | 'encoding'> & { encoding?: BufferEncoding },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
   const invocation = resolveTmuxInvocation(args);
-  return execFileSync(invocation.command, invocation.args, { encoding: 'utf-8', ...execOpts, env: resolveEnv(opts) });
+  return execFileSync(invocation.command, invocation.args, {
+    encoding: 'utf-8', ...execOpts, ...verbatimOption(invocation), env: resolveEnv(opts),
+  });
 }
 
 export async function tmuxExecAsync(
@@ -110,7 +121,7 @@ export async function tmuxExecAsync(
   const invocation = resolveTmuxInvocation(args);
   return promisify(execFile)(invocation.command, invocation.args, {
     encoding: 'utf-8', env: resolveEnv(opts),
-    ...(timeout !== undefined ? { timeout } : {}), ...rest,
+    ...(timeout !== undefined ? { timeout } : {}), ...rest, ...verbatimOption(invocation),
   });
 }
 
@@ -139,7 +150,9 @@ export function tmuxSpawn(
 ): SpawnSyncReturns<string> {
   const { stripTmux: _, ...spawnOpts } = opts ?? {};
   const invocation = resolveTmuxInvocation(args);
-  return spawnSync(invocation.command, invocation.args, { encoding: 'utf-8', ...spawnOpts, env: resolveEnv(opts) });
+  return spawnSync(invocation.command, invocation.args, {
+    encoding: 'utf-8', ...spawnOpts, ...verbatimOption(invocation), env: resolveEnv(opts),
+  });
 }
 
 export async function tmuxCmdAsync(
@@ -193,15 +206,10 @@ function resolveTmuxBinaryPath(): string {
  */
 export function isTmuxAvailable(): boolean {
   try {
-    const resolvedBinary = resolveTmuxBinaryPath();
-    if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
-      const comspec = process.env.COMSPEC || 'cmd.exe';
-      const result = spawnSync(comspec, ['/d', '/s', '/c', `"${resolvedBinary}" -V`], { timeout: 5000 });
-      return result.status === 0;
-    }
-
     if (process.platform === 'win32') {
-      const result = spawnSync(resolvedBinary, ['-V'], { timeout: 5000, shell: true });
+      // Probe the binary the way tmuxExec/tmuxSpawn run it: tmux.exe directly,
+      // tmux.cmd/.bat through COMSPEC (see resolveTmuxInvocation).
+      const result = tmuxSpawn(['-V'], { stripTmux: true, stdio: 'ignore', timeout: 5000 });
       return result.status === 0;
     }
 

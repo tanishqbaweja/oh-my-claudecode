@@ -5,15 +5,15 @@
   "provenance": {
     "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
     "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-    "head": "6533f544ba8fc686aba67439b33b46a2edd7c41a",
-    "sourceSha256": "af5bd87665d90544723b911de66a17bf082280cd751ec57591b45b068d5a5a7a",
+    "head": "4beb3fd41917378321a2ef36802c3d12edd7c62e",
+    "sourceSha256": "7463961f1b5ef01a29091f085606300df3cdf694c46f36ce97226dd594345765",
     "generatedAt": null,
     "generator": "scripts/generate-inventory-graph.mjs"
   },
   "base": "05c800f40d1ad53b42a78609d2667ef4f726808b",
   "planningHead": "0a91273e61dbbd47eb0af4c02844409251e08398",
-  "head": "6533f544ba8fc686aba67439b33b46a2edd7c41a",
-  "sourceSha256": "af5bd87665d90544723b911de66a17bf082280cd751ec57591b45b068d5a5a7a",
+  "head": "4beb3fd41917378321a2ef36802c3d12edd7c62e",
+  "sourceSha256": "7463961f1b5ef01a29091f085606300df3cdf694c46f36ce97226dd594345765",
   "counts": {
     "public": {
       "skills": 84,
@@ -28,8 +28,8 @@
       "toolFiles": 65,
       "libFiles": 49,
       "templateHooks": 25,
-      "srcFiles": 1443,
-      "total": 1468
+      "srcFiles": 1444,
+      "total": 1469
     },
     "generated": {
       "distFiles": 5639,
@@ -42529,6 +42529,11 @@
         "path": "src/cli/__tests__/tmux-utils.test.ts"
       },
       {
+        "id": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
+        "kind": "src",
+        "path": "src/cli/__tests__/tmux-utils.windows.integration.test.ts"
+      },
+      {
         "id": "src/cli/ask.ts",
         "kind": "src",
         "path": "src/cli/ask.ts"
@@ -61712,6 +61717,31 @@
       },
       {
         "from": "src/cli/__tests__/tmux-utils.test.ts",
+        "to": "src/cli/tmux-utils.ts",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
+        "to": "external:fs",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
+        "to": "external:os",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
+        "to": "external:path",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
+        "to": "external:vitest",
+        "kind": "imports"
+      },
+      {
+        "from": "src/cli/__tests__/tmux-utils.windows.integration.test.ts",
         "to": "src/cli/tmux-utils.ts",
         "kind": "imports"
       },
@@ -92107,12 +92137,12 @@
       }
     ],
     "stats": {
-      "nodeCount": 8239,
-      "edgeCount": 8742,
-      "importEdgeCount": 7297,
+      "nodeCount": 8240,
+      "edgeCount": 8747,
+      "importEdgeCount": 7302,
       "registerEdgeCount": 105
     }
   },
-  "inventorySha256": "8e427b73db99516f5dfdea0235e1e8e429e6c9a6be8e0c89d9489478fdc446ed",
-  "manifestSha256": "5fe145059602232cc9d3c2c1e4e4cc0d4fb5f00e0cc3526df02584fb4238da2a"
+  "inventorySha256": "49b19df5742427f28d971d4e09e1b3a1704534e066c783f25f9a9cce57b82236",
+  "manifestSha256": "dbfbd1daa801361f77358da067542de9780d6031dbdd31521a12f04db56f1421"
 }
